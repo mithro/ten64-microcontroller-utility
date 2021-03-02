@@ -9,7 +9,7 @@
 
 #define LPC_FWUP_IMAGE_MAGIC                    0xBEAFCAFE
 #define LPC_HEADER_PAD_SIZE                     42U
-#define LPC_XFER_BLOCK_SIZE                     128U
+#define LPC_XFER_BLOCK_SIZE                     64U
 
 #define LPC_API_MSG_HEADER_SIZE                 4U
 #define LPC_API_DATA_MAX_SIZE                   128U
@@ -51,6 +51,7 @@ typedef enum {
     fwupErrCompare,
     fwupErrCheckNoMagic,
     fwupErrCheckCrcFailed,
+    fwupErrEraseStable,
     fwupErrUnknown
 } lpc_fwup_error_t;
 
@@ -82,9 +83,7 @@ typedef enum {
     apiSysCtlSetResetHoldtime,
     apiSysCtlSetResetEnable,
     apiSysCtlSetNextBootsource,
-    apiSysCtlSystemReset,
     apiFwupGetInfo,
-    apiFwupState,
     apiFwupInit,
     apiFwupXfer,
     apiFwupCheck,
@@ -150,9 +149,13 @@ typedef struct {
 typedef struct {
     uint8_t state;
     uint8_t error;
-    uint8_t blocksReceived;
-    uint8_t blocksFlashed;
 } __attribute__((packed)) lpc_fwup_run_state_t;
+
+typedef struct {
+    uint8_t error;
+    uint32_t addr;
+    uint8_t currentBlock;
+}  __attribute__((packed)) lpc_fwup_transfer_result_t;
 
 typedef struct {
     uint16_t preamb;
@@ -170,7 +173,6 @@ uint8_t lpc_set_reset_enabled(const twi_device_t * twi, const lpc_reset_enable_t
 
 uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info);
 uint8_t lpc_fwup_init(const twi_device_t *twi, const lpc_fwup_bank_id_t bank_id, const uint8_t blocks_to_send);
-uint8_t lpc_fwup_state(const twi_device_t *twi, lpc_fwup_run_state_t * run_state);
 uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const char *fw_file_path);
 uint8_t lpc_fwup_check(const twi_device_t *twi, const lpc_image_header_t *img_header);
 uint8_t lpc_fwup_boot(const twi_device_t *twi);

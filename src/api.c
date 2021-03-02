@@ -218,20 +218,49 @@ uint8_t lpc_set_reset_enabled(const twi_device_t * twi, const lpc_reset_enable_t
 /*uint8_t api_set_next_boot_source(const twi_device_t *twi, const lpc_boot_source_t * boot_source);*/
 
 uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info) {
-	uint8_t send = apiFwupGetInfo;
-	uint8_t recv[1+sizeof(lpc_image_info_t)];
-	twi->write(&send, 1);
 
-	usleep(10000);
+	lpc_api_message_t send;
+	lpc_api_message_t recv;
+	int send_len;
+	int recv_len;
+	int rc;
 
-	twi->read(recv, 1+sizeof(lpc_image_info_t));
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiFwupGetInfo;
+	send.len = 0;
 
-	if (recv[0] != apiFwupGetInfo){
-		printf("Expecting api cmd = %d, got %d\n", apiFwupGetInfo, recv[0]);
+	send_len = LPC_API_MSG_HEADER_SIZE;
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		printf("Fwup get info: Write failed\n");
 		return 1;
 	}
 
-	lpc_image_info_t * info = (lpc_image_info_t *)&recv[1];
+	usleep(10000);
+
+	recv_len = LPC_API_MSG_HEADER_SIZE+sizeof(lpc_image_info_t);
+	rc = twi->read((uint8_t *)&recv, recv_len);
+	if (rc != recv_len){
+		printf("Fwup get info: Read failed\n");
+		return 1;
+	}
+
+	if (recv.preamb != LPC_API_HEADER_PREAMB){
+		printf("Fwup get info: Recv header has no preamb\n");
+		return 1;
+	}
+
+	if (recv.cmd != apiFwupGetInfo){
+		printf("Fwup get info: Expecting api cmd = %d, got %d\n", apiFwupGetInfo, recv.cmd);
+		return 1;
+	}
+
+	if (recv.len != sizeof(lpc_image_info_t)){
+		printf("Fwup get info: Expecting len = %lu, got %d\n", sizeof(lpc_image_info_t), recv.len);
+		return 1;
+	}
+
+	lpc_image_info_t * info = (lpc_image_info_t *)recv.data;
 
 	/*printf("Raw: \n");
 	for (int i=0; i<sizeof(lpc_image_info_t); i++){
@@ -287,28 +316,84 @@ uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info) 
 }
 
 uint8_t lpc_fwup_init(const twi_device_t *twi, const lpc_fwup_bank_id_t bank_id, const uint8_t blocks_to_send){
-	uint8_t send[3];
-	send[0] = apiFwupInit;
-	send[1] = bank_id;
-	send[2] = blocks_to_send;
-	if (3 != twi->write(send, 3))
-		return 1;
+	lpc_api_message_t send;
+	lpc_api_message_t recv;
+	int send_len;
+	int recv_len;
+	int rc;
+	lpc_fwup_run_state_t * result;
 
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiFwupInit;
+	send.len = 2;
+	send.data[0] = bank_id;
+	send.data[1] = blocks_to_send;
+
+	send_len = send.len + LPC_API_MSG_HEADER_SIZE;
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		printf("Fwup init: Write failed\n");
+		return 1;
+	}
+
+	sleep(1);
+
+	recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_run_state_t);
+	rc = twi->read((uint8_t*)&recv, recv_len);
+	if (rc != recv_len){
+		printf("Fwup init: Read failed\n");
+		return 1;
+	}
+
+	if (recv.preamb != LPC_API_HEADER_PREAMB){
+		printf("Fwup init: No preamb in recv header\n");
+		return 1;
+	}
+
+	if (recv.cmd != apiFwupInit){
+		printf("Fwup init: Expecting init cmd, got %d\n", recv.cmd);
+		return 1;
+	}
+
+	if (recv.len != sizeof(lpc_fwup_run_state_t)){
+		printf("Fwup init: Expecting len %lu, got %d\n", sizeof(lpc_fwup_run_state_t), recv.len);
+		return 1;
+	}
+
+	result = (lpc_fwup_run_state_t *)recv.data;
+
+	if (result->state != stateInit){
+		printf("Fwup init: Expecting state init, got %d\n", result->state);
+		return 1;
+	}
+
+	if (result->error != fwupSuccess){
+		if (result->error == fwupErrEraseStable)
+			printf("Fwup init: Error attempt to overwrite stable image\n");
+		else
+			printf("Fwup init: State init, error %d\n", result->error);
+		return 1;
+	}
+
+	printf("Fwup init: Success\n");
 	return 0;
 }
 
-uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const char *fw_file_path/*, lpc_image_header_t * img_header*/){
+uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const char *fw_file_path){
 
-	uint8_t rc;
 	uint32_t blocks;
-	uint8_t send[1+LPC_XFER_BLOCK_SIZE];
+	lpc_api_message_t send;
+	lpc_api_message_t recv;
+	int send_len;
+	int recv_len;
+	int rc;
 	FILE * fp;
 	lpc_image_header_t img_header;
 	lpc_fwup_run_state_t run_state;
 
 	fp = fopen(fw_file_path, "r");
 	if (fp == NULL){
-		printf("File %s open failed\n", fw_file_path);
+		printf("Fwup transfer: File %s open failed\n", fw_file_path);
 		rc = 1;
 		goto OPEN_FAIL;
 	}
@@ -317,7 +402,7 @@ uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const 
 	int32_t file_size = ftell(fp);
 
 	if (file_size != 13312){
-		printf("File size is should 13312 B, got %d B\n", file_size);
+		printf("Fwup transfer: File size is should 13312 B, got %d B\n", file_size);
 		rc = 1;
 		goto EXIT;
 	}
@@ -327,7 +412,7 @@ uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const 
 	size_t bytes = fread(&img_header, 1, 64U, fp);
 
 	if (img_header.magic != LPC_FWUP_IMAGE_MAGIC) {
-		printf("Image header magic invalid\n");
+		printf("Fwup transfer: Image header magic invalid\n");
 		rc = 2;
 		goto EXIT;
 	}
@@ -341,95 +426,74 @@ uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const 
 
 	/* INIT */
 	if (lpc_fwup_init(twi, bank_id, (uint8_t)blocks)){
-		printf("Fwup init failed\n");
 		goto EXIT;
 	}
 
 	sleep(1);
 
-	/* STATE after init */
-	if (lpc_fwup_state(twi, &run_state)){
-		printf("Fwup get state after init failed\n");
-		goto EXIT;
-	}
-
-	if (run_state.state != stateInit){
-		printf("Fwup state %d, expecting init\n", run_state.state);
-		goto EXIT;
-	}
-
-	if (run_state.error != fwupSuccess){
-		printf("Fwup init state error = %d\n", run_state.error);
-		goto EXIT;
-	}
-
-	sleep(1);
-
-	send[0] = apiFwupXfer;
-	printf("Start transfer\n");
+	printf("Fwup transfer: Start transfer\n");
 
 	// goto start of file
 	fseek(fp, 0L, SEEK_SET);
 
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiFwupXfer;
+	send.len = LPC_XFER_BLOCK_SIZE;
+	send_len = LPC_XFER_BLOCK_SIZE + LPC_API_MSG_HEADER_SIZE;
+
 	for (int i=0; i<blocks; i++){
-		memset(&send[1], 0xFF, LPC_XFER_BLOCK_SIZE);
+		memset(send.data, 0xFF, LPC_XFER_BLOCK_SIZE);
 
 		// if last block only read remainder bytes otherwise read block size
 		size_t to_read = (i==(blocks-1))? rem : LPC_XFER_BLOCK_SIZE;
-		size_t bytes = fread(&send[1], 1, to_read, fp);
+		fread(send.data, 1, to_read, fp);
 		// send on the twi
-		twi->write(send, 1 + LPC_XFER_BLOCK_SIZE);
-		printf("Progress = %d/%d\n",i+1,blocks);
+		rc = twi->write((uint8_t *)&send, send_len);
+		if (rc != send_len){
+			printf("Fwup transfer: Write failed at block %d\n", i+1);
+			goto EXIT;
+		}
+
+		printf("Fwup transfer: Progress = %d/%d ",i+1,blocks);
 		usleep(100000);
-	}
-	printf("\nEnd transfer\n");
 
-	sleep(1);
+		recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_transfer_result_t);
+		rc = twi->read((uint8_t *)&recv, recv_len);
+		if (recv_len != rc){
+			printf("Fwup transfer: Read failed at block %d\n", i+1);
+			goto EXIT;
+		}
 
-	/* STATE after transfer */
-	if (lpc_fwup_state(twi, &run_state)){
-		printf("Fwup get state after transfer failed\n");
-		goto EXIT;
-	}
+		if (recv.preamb != LPC_API_HEADER_PREAMB){
+			printf("Fwup transfer: No preamb in recv at block %d\n", i+1);
+			goto EXIT;
+		}
 
-	if (run_state.state != stateXfer){
-		printf("Fwup state %d, expecting transfer\n", run_state.state);
-		goto EXIT;
-	}
+		if (recv.cmd != apiFwupXfer){
+			printf("Fwup transfer: Expect cmd transfer in recv at block %d, got %d\n", i+1, recv.cmd);
+			goto EXIT;
+		}
 
-	if (run_state.error != fwupSuccess){
-		printf("Fwup transfer state error = %d\n", run_state.error);
-		goto EXIT;
+		if (recv.len != sizeof(lpc_fwup_transfer_result_t)){
+			printf("Fwup transfer: Expect length %lu recv at block %d, got %d\n", sizeof(lpc_fwup_transfer_result_t), i+1, recv.len);
+			goto EXIT;
+		}
+
+		lpc_fwup_transfer_result_t * result = (lpc_fwup_transfer_result_t *)recv.data;
+		printf("Fwup transfer block %d: Result addr=%08X, block=%d, error=%d\n", i+1, result->addr, result->currentBlock, result->error);
+
 	}
+	printf("\nFwup transfer: End transfer\n");
 
 	sleep(1);
 
 	/* CHECK */
 	if (lpc_fwup_check(twi, &img_header)){
-		printf("Fwup check failed\n");
+		printf("Fwup transfer: Fwup check failed\n");
 		goto EXIT;
 	}
 
-	sleep(1);
-
-	/* STATE after check */
-	if (lpc_fwup_state(twi, &run_state)){
-		printf("Fwup get state after check failed\n");
-		goto EXIT;
-	}
-
-	if (run_state.state != stateCheck){
-		printf("Fwup state %d, expecting check\n", run_state.state);
-		goto EXIT;
-	}
-
-	if (run_state.error != fwupSuccess){
-		printf("Fwup transfer state error = %d\n", run_state.error);
-		goto EXIT;
-	}
-
-	printf("Fwup transfer done\n");
-
+	printf("Fwup transfer: Transfer done\n");
 
 EXIT:
 	fclose(fp);
@@ -440,47 +504,82 @@ OPEN_FAIL:
 }
 
 uint8_t lpc_fwup_check(const twi_device_t *twi, const lpc_image_header_t *img_header){
-	size_t length = 1+sizeof(lpc_image_header_t);
-	uint8_t send[length];
-	send[0] = apiFwupCheck;
-	memcpy(&send[1], (uint8_t *)img_header, sizeof(lpc_image_header_t));
-	if (length != twi->write(send, length))
+
+	lpc_api_message_t send;
+	lpc_api_message_t recv;
+	int send_len;
+	int recv_len;
+	int rc;
+	lpc_fwup_run_state_t * result;
+
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiFwupCheck;
+	send.len = sizeof(lpc_image_header_t);
+	memcpy(send.data, (uint8_t *)img_header, send.len);
+
+	send_len = send.len + LPC_API_MSG_HEADER_SIZE;
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		printf("Fwup check: Write failed\n");
 		return 1;
+	}
+
+	sleep(1);
+
+	recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_run_state_t);
+	rc = twi->read((uint8_t*)&recv, recv_len);
+	if (rc != recv_len){
+		printf("Fwup check: Read failed\n");
+		return 1;
+	}
+
+	if (recv.preamb != LPC_API_HEADER_PREAMB){
+		printf("Fwup check: No preamb in recv header\n");
+		return 1;
+	}
+
+	if (recv.cmd != apiFwupCheck){
+		printf("Fwup check: Expecting check cmd, got %d\n", recv.cmd);
+		return 1;
+	}
+
+	if (recv.len != sizeof(lpc_fwup_run_state_t)){
+		printf("Fwup check: Expecting len %lu, got %d\n", sizeof(lpc_fwup_run_state_t), recv.len);
+		return 1;
+	}
+
+	result = (lpc_fwup_run_state_t *)recv.data;
+
+	if (result->state != stateCheck){
+		printf("Fwup check: Expecting state check, got %d\n", result->state);
+		return 1;
+	}
+
+	if (result->error != fwupSuccess){
+		printf("Fwup check: State check, error %d\n", result->error);
+		return 1;
+	}
+
+	printf("Fwup check: Success\n");
 
 	return 0;
 }
 
 uint8_t lpc_fwup_boot(const twi_device_t *twi){
-	uint8_t send = apiFwupBoot;
-	twi->write(&send, 1);
-	return 0;
-}
+	lpc_api_message_t send;
+	int send_len;
+	int rc;
 
-uint8_t lpc_fwup_state(const twi_device_t *twi, lpc_fwup_run_state_t *run_state) {
-	uint8_t send = apiFwupState;
-	uint8_t recv[1+sizeof(lpc_fwup_run_state_t)];
-	if (1 != twi->write(&send, 1))
-		return 1;
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiFwupBoot;
+	send.len = 0;
 
-	usleep(10000);
-
-	uint8_t exp_recv_len = 1+sizeof(lpc_fwup_run_state_t);
-	printf("lpc_fwup_state: Expect %d bytes\n", exp_recv_len);
-	if (exp_recv_len != twi->read(recv, exp_recv_len))
-		return 1;
-
-	if (recv[0] != apiFwupState){
-		printf("Expecting api cmd = %d, got %d\n", apiFwupState, recv[0]);
+	send_len = send.len + LPC_API_MSG_HEADER_SIZE;
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		printf("Fwup boot: Write failed\n");
 		return 1;
 	}
-
-	memcpy((uint8_t *)run_state, &recv[1], sizeof(lpc_fwup_run_state_t));
-
-	printf("Fwup run state\n");
-	printf("    State: %d\n", run_state->state);
-	printf("    Error: %d\n", run_state->error);
-	printf("    Blocks transferred: %d\n", run_state->blocksReceived);
-	printf("    Blocks flashed: %d\n", run_state->blocksFlashed);
 
 	return 0;
 }
