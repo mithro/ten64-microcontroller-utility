@@ -278,7 +278,7 @@ uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info) 
 			printf("    Type: Candidate\n");
 		else if (info->bankAImg.img_type == imgTypeUnstable)
 			printf("    Type: Unstable\n");
-		else if (info->bankAImg.img_type == imgTypeForceOldStable)
+		else if (info->bankAImg.img_type == imgTypeOldStable)
 			printf("   Type: Old stable\n");
 		else
 			printf("   Type: Unknown\n");
@@ -298,7 +298,7 @@ uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info) 
 			printf("    Type: Candidate\n");
 		else if (info->bankBImg.img_type == imgTypeUnstable)
 			printf("    Type: Unstable\n");
-		else if (info->bankBImg.img_type == imgTypeForceOldStable)
+		else if (info->bankBImg.img_type == imgTypeOldStable)
 			printf("   Type: Old stable\n");
 		else
 			printf("   Type: Unknown\n");
@@ -454,7 +454,7 @@ uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const 
 			goto EXIT;
 		}
 
-		printf("Fwup transfer: Progress = %d/%d ",i+1,blocks);
+		printf("\rFwup transfer: Progress = %d/%d ",i+1,blocks);
 		usleep(100000);
 
 		recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_transfer_result_t);
@@ -480,8 +480,8 @@ uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const 
 		}
 
 		lpc_fwup_transfer_result_t * result = (lpc_fwup_transfer_result_t *)recv.data;
-		printf("Fwup transfer block %d: Result addr=%08X, block=%d, error=%d\n", i+1, result->addr, result->currentBlock, result->error);
-
+		printf("Fwup transfer block %d: Result addr=%08X, block=%d, error=%d", i+1, result->addr, result->currentBlock, result->error);
+		fflush(stdout);
 	}
 	printf("\nFwup transfer: End transfer\n");
 
