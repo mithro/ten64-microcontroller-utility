@@ -77,18 +77,20 @@ typedef enum {
 } lpc_image_type_t;
 
 typedef enum {
-    apiBdInfoSetMac 		= 0U,
-    apiBdInfoGetInfo,
-    apiSysCtlGetState,
-    apiSysCtlSetResetHoldtime,
-    apiSysCtlSetResetEnable,
-    apiSysCtlSetNextBootsource,
-    apiFwupGetInfo,
-    apiFwupInit,
-    apiFwupXfer,
-    apiFwupCheck,
-    apiFwupBoot,
-    apiMax
+    apiBdInfoSetMac             = ((uint8_t)0x10),
+    apiBdInfoGetInfo            = ((uint8_t)0x11),
+
+    apiSysCtlGetState           = ((uint8_t)0x20),
+    apiSysCtlSetResetHoldtime   = ((uint8_t)0x21),
+    apiSysCtlSetResetEnable     = ((uint8_t)0x22),
+    apiSysCtlSetNextBootsource  = ((uint8_t)0x23),
+    apiSysCtlSet10gEnable       = ((uint8_t)0x24),
+
+    apiFwupGetInfo              = ((uint8_t)0xA0),
+    apiFwupInit                 = ((uint8_t)0xA1),
+    apiFwupXfer                 = ((uint8_t)0xA2),
+    apiFwupCheck                = ((uint8_t)0xA3),
+    apiFwupBoot                 = ((uint8_t)0xA4),
 } lpc_api_t;
 
 typedef struct {
