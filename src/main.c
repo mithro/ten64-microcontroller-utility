@@ -3,13 +3,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <errno.h>
+
 #include "api.h"
 #include "twi.h"
 
 twi_device_t twi;
 
 static void usage(void){
+#ifdef ENABLE_MAC_CHANGE
 	printf("lpc804cli --set-mac <mac>                   Set the MAC address\n");
+#endif
 	printf("lpc804cli --get-info                        Get uC info\n");
 	printf("lpc804cli --get-state                       Get system control state\n");
 	printf("lpc804cli --set-reset-holdtime <{3:10}>     Set the hold time for the external reset button\n");
@@ -40,14 +44,16 @@ static uint8_t get_arg_value(char * arg, const char * key, char * value){
 		return 2;
 }
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
+	int retcode;
+
 	//crc_make_table();
 	twi_initialise(&twi);
 	twi.init();
 
 	if (argc == 3 && !strcmp(argv[1],"--set-mac")){
-
+#ifdef ENABLE_MAC_CHANGE
 		uint32_t len = strlen(argv[2]);
 		if (len != 12){
 			printf("Expecting length 12 for mac addresss, got %d\n", len);
@@ -66,7 +72,10 @@ void main(int argc, char **argv)
 		}
 
 		lpc_set_mac(&twi, &lpc_mac);
-
+#else
+		printf("ERROR: MAC setting has not been enabled in this utility build\n");
+		retcode = -ENOTSUP;
+#endif
 	} else if (argc == 2 && !strcmp(argv[1], "--get-info")){
 
 		lpc_get_board_info(&twi);
@@ -137,4 +146,5 @@ void main(int argc, char **argv)
 
 EXIT:
 	twi.close();
+	return retcode;
 }
