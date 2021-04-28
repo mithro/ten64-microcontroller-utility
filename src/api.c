@@ -129,11 +129,11 @@ uint8_t lpc_get_system_state(const twi_device_t *twi){
 	}
 
 	lpc_system_state_t * state = (lpc_system_state_t *)recv.data;
-	printf("LPC uC system control state: \n");
+	printf("Ten64 uC system control state: \n");
 	if (state->atx_power_state){
-		printf("    Atx powered: Yes\n");
+		printf("    ATX powered: Yes\n");
 	} else {
-		printf("    Atx powered: No\n");
+		printf("    ATX powered: No\n");
 	}
 
 	if (state->current_boot_source == bsNand){
