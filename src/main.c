@@ -46,6 +46,39 @@ static uint8_t get_arg_value(char * arg, const char * key, char * value){
 		return 2;
 }
 
+int process_fwup_run(const twi_device_t *twi, char **argv)
+{
+	lpc_fwup_run_state_t fwup_run_state;
+	lpc_image_header_t image_header;
+	uint8_t bank_id;
+	uint8_t retcode;
+	const char *fw_path = argv[3];
+	char bank = argv[2][0];
+
+	switch (bank)
+	{
+	case 'a':
+		bank_id = bankId1;
+		break;
+	case 'b':
+		bank_id = bankId2;
+		break;
+	default:
+		fprintf(stderr, "Image bank/slot attribute should be 'a' or 'b'\n");
+		return -EINVAL;
+		break;
+	}
+
+	if (access(fw_path, F_OK) == -1)
+	{
+		printf("File %s does not exists\n", fw_path);
+		return -ENOENT;
+	}
+
+	retcode = lpc_fwup_transfer(twi, bank_id, fw_path);
+	return retcode;
+}
+
 int main(int argc, char **argv)
 {
 	int retcode;
@@ -120,28 +153,8 @@ int main(int argc, char **argv)
 
 	 } else if (argc == 4 && !strcmp(argv[1], "--fwup-run")){
 
-		lpc_fwup_run_state_t fwup_run_state;
-		lpc_image_header_t image_header;
-		char f_path[50];
-		uint8_t bank_id;
+		retcode = process_fwup_run(&twi, argv);
 
-		if (!strcmp(argv[2], "a"))
-			bank_id = bankId1;
-		else if (!strcmp(argv[2], "b"))
-			bank_id = bankId2;
-		else {
-			printf("Expect arg3 to be bank a or b\n");
-			goto EXIT;
-		}
-
-		sprintf(f_path, "/tmp/%s", argv[3]);
-		if ( access( f_path, F_OK ) == -1 ){
-			printf("File %s does not exists\n", f_path);
-			goto EXIT;
-		}
-
-
-		lpc_fwup_transfer(&twi, bank_id, f_path);
 	} else if (argc == 2 && !strcmp(argv[1], "--fwup-boot")) {
 
 		lpc_fwup_boot(&twi);
