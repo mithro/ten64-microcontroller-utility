@@ -48,9 +48,13 @@ int main(int argc, char **argv)
 {
 	int retcode;
 
-	//crc_make_table();
 	twi_initialise(&twi);
-	twi.init();
+	retcode = twi.init();
+
+	if (retcode < 0) {
+		fprintf(stderr, "ERROR: Unable to establish I2C/TWI connection to microcontroller\n");
+		return -ENOTCONN;
+	}
 
 	if (argc == 3 && !strcmp(argv[1],"--set-mac")){
 #ifdef ENABLE_MAC_CHANGE
