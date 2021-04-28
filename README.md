@@ -1,23 +1,67 @@
-# Usage
+# Ten64 Microcontroller tool
 
-## lpc804cli --set-mac <mac>
+The microcontroller tool can be used to communicate with the board microcontroller.
+Features include:
+* View current firmware version
+* View current settings and state (for example, if system powered from ATX)
+* View LPC804 unique device serial number
+* Set RESET button behaviour (change required duration or ignore)
+* Install a new board microcontroller firmware
 
-Set the mac address. Expects a string of length 12.
+## Usage
+```
+ten64-controller --get-info                        Get uC info
+ten64-controller --get-state                       Get system control state
+ten64-controller --set-reset-holdtime <{3:10}>     Set the hold time for the external reset button
+ten64-controller --set-reset-enabled <0|1>         Enable/disable the external button reset
+ten64-controller --image-info                      Get current image data stored in both flash slots
+ten64-controller --fwup-run <a|b> <new_fw_file>    Firmware upgrade run
+ten64-controller --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU
+```
 
-## lpc804cli --get-info
+NOTE: We recommend doing microcontroller firmware updates only from the
+onboard recovery firmware.
 
-Get uC info including CPU id, mac address and firmware version.
+Using `--fwup-boot` to boot into the new firmware will cause the board to
+run through it's cold power on sequence.
 
-## lpc804cli --get-state
+### Sample outputs:
+```
+# ten64-controller --get-info
 
-Get the system control state including whether powered by ATX, external reset button enabled, external reset button hold time, boot source and dip switch to indicate whether reset triggers are ignored.
+LPC uC info:
+    MAC: 00:0A:FA:24:25:2F
+    UUID: 0805B031:AF2A1CE1:1412031B:F5000701
+    Firmware: v1.1.3
 
-## lpc804cli --set-reset-holdtime <time {3:10}>
+# ten64-controller --get-state
+Ten64 uC system control state:
+    ATX powered: Yes
+    Current boot source: nand
+    Next boot source: nand
+    Switch boot source: nand
+    Reset enabled: yes
+    Reset hold time: 3 seconds
+    Switch set to ignore resets: no
 
-Set the external reset button hold time in seconds. Range is 3 to 10 seconds.
+# ten64-controller --image-info
+LPC uC image bank A info
+   Type: Old stable
+    Size: 11760 B
+    Version: 1.1.2
+    Git sha: 98abc22
+LPC uC image bank B info
+    Type: Stable
+    Size: 11760 B
+    Version: 1.1.3
+    Git sha: 5b57568
 
-## lpc804cli --set-reset-enabled <0|1>
+# ten64-controller --fwup-run a /root/lpcfw_1.1.3_5b57568_banka.img
+Fwup init: Success
+Fwup transfer: Start transfer
+Fwup transfer: Progress = 184/184 Fwup transfer block 184: Result addr=000041C0, block=183, error=0
+Fwup transfer: End transfer
+Fwup check: Success
+Fwup transfer: Transfer done
 
-Enable or disable the external reset button function.
-
-
+```
