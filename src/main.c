@@ -10,20 +10,17 @@
 
 twi_device_t twi;
 
-static void usage(void){
+static void usage(const char *progname){
 #ifdef ENABLE_MAC_CHANGE
-	printf("lpc804cli --set-mac <mac>                   Set the MAC address\n");
+	printf("%s --set-mac <mac>                   Set the MAC address\n", progname);
 #endif
-	printf("lpc804cli --get-info                        Get uC info\n");
-	printf("lpc804cli --get-state                       Get system control state\n");
-	printf("lpc804cli --set-reset-holdtime <{3:10}>     Set the hold time for the external reset button\n");
-	printf("lpc804cli --set-reset-enabled <0|1>         Enable/disable the external button reset\n");
-	printf("lpc804cli --image-info                      Get current image data stored in both flash slots\n");
-	//printf("lpc --fwup-init <a|b>                     Firmware upgrade init bank a or bank b\n");
-	//printf("lpc --fwup-state                          Firmware upgrade run state\n");
-	//printf("lpc --fwup-transfer <new_fw_file>         Firmware upgrade transfer file. NOTE: place file in /tmp\n");
-	printf("lpc804cli --fwup-run <a|b> <new_fw_file>    Firmware upgrade run\n");
-	printf("lpc804cli --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n");
+	printf("%s --get-info                        Get uC info\n", progname);
+	printf("%s --get-state                       Get system control state\n", progname);
+	printf("%s --set-reset-holdtime <{3:10}>     Set the hold time for the external reset button\n", progname);
+	printf("%s --set-reset-enabled <0|1>         Enable/disable the external button reset\n", progname);
+	printf("%s --image-info                      Get current image data stored in both flash slots\n", progname);
+	printf("%s --fwup-run <a|b> <new_fw_file>    Firmware upgrade run\n", progname);
+	printf("%s --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n", progname);
 }
 
 static uint8_t get_arg_value(char * arg, const char * key, char * value){
@@ -145,7 +142,7 @@ int main(int argc, char **argv)
 		lpc_fwup_boot(&twi);
 
 	} else {
-		usage();
+		usage(argv[0]);
 	}
 
 EXIT:

@@ -7,13 +7,13 @@ project(lpc804cli)
 OPTION(ENABLE_MAC_SET "Build with ability to change board MAC" OFF)
 
 set(COMMON_SOURCE_FILES src/api.c src/twi.c)
-add_executable(lpc804cli src/main.c ${COMMON_SOURCE_FILES})
+add_executable(ten64-controller src/main.c ${COMMON_SOURCE_FILES})
 
 IF (ENABLE_MAC_SET)
 add_definitions(-DENABLE_MAC_CHANGE)
 ENDIF()
 
-INSTALL(TARGETS lpc804cli
+INSTALL(TARGETS ten64-controller
     RUNTIME DESTINATION sbin)
 
 #TARGET_LINK_LIBRARIES(lpc804cli ${LIBS})
