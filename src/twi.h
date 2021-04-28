@@ -1,3 +1,9 @@
+/* Ten64 Microcontroller Utility
+ * Copyright 2021 Traverse Technologies Australia
+ *
+ * SPDX-License-Identifier:	MIT
+ */
+
 #ifndef TWI_H
 #define TWI_H
 
