@@ -12,6 +12,37 @@
 #include <unistd.h>
 #include "api.h"
 
+/* uc_api_receive_response - receive a command response from the controller
+ *
+ */
+int uc_api_receive_response(const twi_device_t *twi,
+			    lpc_api_message_t *recv, lpc_api_t expected_command,
+			    size_t expected_command_response_size) {
+	size_t recv_len = LPC_API_MSG_HEADER_SIZE + expected_command_response_size;
+
+	int rc = twi->read((uint8_t *)recv, recv_len);
+	if (rc != recv_len){
+		printf("%s: read failed\n", __func__);
+		return -1;
+	}
+
+	if (recv->preamb != LPC_API_HEADER_PREAMB){
+		printf("%s: recv header has no preamb\n", __func__);
+		return -1;
+	}
+
+	if (recv->cmd != expected_command){
+		printf("%s: Expecting api cmd = %d, got %d\n", __func__, expected_command, recv->cmd);
+		return -1;
+	}
+
+	if (recv->len != expected_command_response_size){
+		printf("%s: Expecting len = %lu, got %d\n", __func__, expected_command_response_size, recv->len);
+		return -1;
+	}
+	return 0;
+}
+
 uint8_t lpc_set_mac(const twi_device_t *twi, const lpc_mac_t * mac){
 	lpc_api_message_t send;
 	int rc;
@@ -53,26 +84,10 @@ uint8_t lpc_get_board_info(const twi_device_t *twi){
 
 	usleep(10000);
 
-	recv_len = sizeof(lpc_bdinfo_t) + LPC_API_MSG_HEADER_SIZE;
-	rc = twi->read((uint8_t *)&recv, recv_len);
-	if (rc != recv_len){
-		printf("Get board info: read failed\n");
-		return 1;
-	}
-
-	if (recv.preamb != LPC_API_HEADER_PREAMB){
-		printf("Get board info: Recv header has no preamb\n");
-		return 1;
-	}
-
-	if (recv.cmd != apiBdInfoGetInfo){
-		printf("Get board info: Expecting api cmd = %d, got %d\n", apiBdInfoGetInfo, recv.cmd);
-		return 1;
-	}
-
-	if (recv.len != sizeof(lpc_bdinfo_t)){
-		printf("Get board info: Expecting len = %lu, got %d\n", sizeof(lpc_bdinfo_t), recv.len);
-		return 1;
+	rc = uc_api_receive_response(twi, &recv, apiBdInfoGetInfo, sizeof(lpc_bdinfo_t));
+	if (rc != 0) {
+		fprintf(stderr, "%s: Failed to receive a response for get board info command (%d)\n", __func__, rc);
+		return -1;
 	}
 
 	lpc_bdinfo_t * info = (lpc_bdinfo_t *)recv.data;
@@ -106,26 +121,10 @@ uint8_t lpc_get_system_state(const twi_device_t *twi){
 
 	usleep(10000);
 
-	recv_len = sizeof(lpc_system_state_t) + LPC_API_MSG_HEADER_SIZE;
-	rc = twi->read((uint8_t *)&recv, recv_len);
-	if (rc != recv_len){
-		printf("Get system state: read failed\n");
-		return 1;
-	}
-
-	if (recv.preamb != LPC_API_HEADER_PREAMB){
-		printf("Get system state: Recv header has no preamb\n");
-		return 1;
-	}
-
-	if (recv.cmd != apiSysCtlGetState){
-		printf("Get system state: Expecting api cmd = %d, got %d\n", apiSysCtlGetState, recv.cmd);
-		return 1;
-	}
-
-	if (recv.len != sizeof(lpc_system_state_t)){
-		printf("Get system state: Expecting len = %lu, got %d\n", sizeof(lpc_system_state_t), recv.len);
-		return 1;
+	rc = uc_api_receive_response(twi, &recv, apiSysCtlGetState, sizeof(lpc_system_state_t));
+	if (rc != 0) {
+		fprintf(stderr, "%s failed to receive a valid response (%d)\n", __func__, rc);
+		return rc;
 	}
 
 	lpc_system_state_t * state = (lpc_system_state_t *)recv.data;
@@ -244,26 +243,10 @@ uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info) 
 
 	usleep(10000);
 
-	recv_len = LPC_API_MSG_HEADER_SIZE+sizeof(lpc_image_info_t);
-	rc = twi->read((uint8_t *)&recv, recv_len);
-	if (rc != recv_len){
-		printf("Fwup get info: Read failed\n");
-		return 1;
-	}
-
-	if (recv.preamb != LPC_API_HEADER_PREAMB){
-		printf("Fwup get info: Recv header has no preamb\n");
-		return 1;
-	}
-
-	if (recv.cmd != apiFwupGetInfo){
-		printf("Fwup get info: Expecting api cmd = %d, got %d\n", apiFwupGetInfo, recv.cmd);
-		return 1;
-	}
-
-	if (recv.len != sizeof(lpc_image_info_t)){
-		printf("Fwup get info: Expecting len = %lu, got %d\n", sizeof(lpc_image_info_t), recv.len);
-		return 1;
+	rc = uc_api_receive_response(twi, &recv, apiFwupGetInfo, sizeof(lpc_image_info_t));
+	if (rc != 0) {
+		fprintf(stderr, "%s failed to receive a valid response (%d)\n", __func__, rc);
+		return rc;
 	}
 
 	lpc_image_info_t * info = (lpc_image_info_t *)recv.data;
@@ -344,26 +327,10 @@ uint8_t lpc_fwup_init(const twi_device_t *twi, const lpc_fwup_bank_id_t bank_id,
 
 	sleep(1);
 
-	recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_run_state_t);
-	rc = twi->read((uint8_t*)&recv, recv_len);
-	if (rc != recv_len){
-		printf("Fwup init: Read failed\n");
-		return 1;
-	}
-
-	if (recv.preamb != LPC_API_HEADER_PREAMB){
-		printf("Fwup init: No preamb in recv header\n");
-		return 1;
-	}
-
-	if (recv.cmd != apiFwupInit){
-		printf("Fwup init: Expecting init cmd, got %d\n", recv.cmd);
-		return 1;
-	}
-
-	if (recv.len != sizeof(lpc_fwup_run_state_t)){
-		printf("Fwup init: Expecting len %lu, got %d\n", sizeof(lpc_fwup_run_state_t), recv.len);
-		return 1;
+	rc = uc_api_receive_response(twi, &recv, apiFwupInit, sizeof(lpc_fwup_run_state_t));
+	if (rc != 0) {
+		fprintf(stderr, "%s failed to receive a valid response (%d)\n", __func__, rc);
+		return rc;
 	}
 
 	result = (lpc_fwup_run_state_t *)recv.data;
@@ -463,27 +430,7 @@ uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const 
 		printf("\rFwup transfer: Progress = %d/%d ",i+1,blocks);
 		usleep(100000);
 
-		recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_transfer_result_t);
-		rc = twi->read((uint8_t *)&recv, recv_len);
-		if (recv_len != rc){
-			printf("Fwup transfer: Read failed at block %d\n", i+1);
-			goto EXIT;
-		}
-
-		if (recv.preamb != LPC_API_HEADER_PREAMB){
-			printf("Fwup transfer: No preamb in recv at block %d\n", i+1);
-			goto EXIT;
-		}
-
-		if (recv.cmd != apiFwupXfer){
-			printf("Fwup transfer: Expect cmd transfer in recv at block %d, got %d\n", i+1, recv.cmd);
-			goto EXIT;
-		}
-
-		if (recv.len != sizeof(lpc_fwup_transfer_result_t)){
-			printf("Fwup transfer: Expect length %lu recv at block %d, got %d\n", sizeof(lpc_fwup_transfer_result_t), i+1, recv.len);
-			goto EXIT;
-		}
+		rc = uc_api_receive_response(twi, &recv, apiFwupXfer, sizeof(lpc_fwup_transfer_result_t));
 
 		lpc_fwup_transfer_result_t * result = (lpc_fwup_transfer_result_t *)recv.data;
 		printf("Fwup transfer block %d: Result addr=%08X, block=%d, error=%d", i+1, result->addr, result->currentBlock, result->error);
@@ -532,26 +479,10 @@ uint8_t lpc_fwup_check(const twi_device_t *twi, const lpc_image_header_t *img_he
 
 	sleep(1);
 
-	recv_len = LPC_API_MSG_HEADER_SIZE + sizeof(lpc_fwup_run_state_t);
-	rc = twi->read((uint8_t*)&recv, recv_len);
-	if (rc != recv_len){
-		printf("Fwup check: Read failed\n");
-		return 1;
-	}
-
-	if (recv.preamb != LPC_API_HEADER_PREAMB){
-		printf("Fwup check: No preamb in recv header\n");
-		return 1;
-	}
-
-	if (recv.cmd != apiFwupCheck){
-		printf("Fwup check: Expecting check cmd, got %d\n", recv.cmd);
-		return 1;
-	}
-
-	if (recv.len != sizeof(lpc_fwup_run_state_t)){
-		printf("Fwup check: Expecting len %lu, got %d\n", sizeof(lpc_fwup_run_state_t), recv.len);
-		return 1;
+	rc = uc_api_receive_response(twi, &recv, apiFwupCheck, sizeof(lpc_fwup_run_state_t));
+	if (rc != 0) {
+		fprintf(stderr, "%s failed to receive a valid response (%d)\n", __func__, rc);
+		return rc;
 	}
 
 	result = (lpc_fwup_run_state_t *)recv.data;
