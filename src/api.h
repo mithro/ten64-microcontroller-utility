@@ -84,6 +84,8 @@ typedef enum {
 typedef enum {
     apiBdInfoSetMac             = ((uint8_t)0x10),
     apiBdInfoGetInfo            = ((uint8_t)0x11),
+    apiBdInfoGetBootCount       = ((uint8_t)0x12),
+    apiBdInfoSetNextBootPart    = ((uint8_t)0x13),
 
     apiSysCtlGetState           = ((uint8_t)0x20),
     apiSysCtlSetResetHoldtime   = ((uint8_t)0x21),
@@ -171,12 +173,26 @@ typedef struct {
     uint8_t data[LPC_API_DATA_MAX_SIZE];
 }  __attribute__((packed)) lpc_api_message_t;
 
+typedef struct __attribute__((packed)) {
+	uint8_t bootcount;
+	char nextbootpart;
+	uint8_t nextbootpart_ttl;
+} lpc_api_get_next_bootpart_msg_t;
+
+typedef struct __attribute__((packed)) {
+	char nextbootpart;
+	uint8_t nextbootpart_ttl;
+} lpc_set_next_bootpart_msg_t;
+
 uint8_t lpc_set_mac(const twi_device_t *twi, const lpc_mac_t * mac);
 uint8_t lpc_get_board_info(const twi_device_t *twi);
 uint8_t lpc_get_system_state(const twi_device_t *twi);
 uint8_t lpc_set_reset_holdtime(const twi_device_t * twi, const lpc_reset_holdtime_t * reset_time);
 uint8_t lpc_set_reset_enabled(const twi_device_t * twi, const lpc_reset_enable_t * reset_enabled);
 //uint8_t api_set_next_boot_source(const twi_device_t *twi, const lpc_boot_source_t * boot_source);*/
+
+uint8_t lpc_get_next_bootpart(const twi_device_t *twi, int is_bootpart_only);
+uint8_t lpc_set_next_bootpart(const twi_device_t *twi, const char nextpart, uint8_t ttl);
 
 uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info);
 uint8_t lpc_fwup_init(const twi_device_t *twi, const lpc_fwup_bank_id_t bank_id, const uint8_t blocks_to_send);

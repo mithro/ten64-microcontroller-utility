@@ -26,6 +26,9 @@ static void usage(const char *progname){
 	printf("%s --image-info                      Get current image data stored in both flash slots\n", progname);
 	printf("%s --fwup-run <a|b> <new_fw_file>    Firmware upgrade run\n", progname);
 	printf("%s --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n", progname);
+	printf("%s %-33s %s",progname,"--get-bootcount","Get system bootcount (since reboot) and next boot part register\n");
+	printf("%s %-33s %s",progname,"--get-next-bootpart", "Return the next bootpart (by itself, no annotation), or exit=1 if not set\n");
+	printf("%s %-33s %s",progname,"--set-next-bootpart <x> <ttl>","Set next bootpart to <x> with a TTL of <ttl> reboots\n");
 }
 
 static uint8_t get_arg_value(char * arg, const char * key, char * value){
@@ -159,6 +162,18 @@ int main(int argc, char **argv)
 
 		lpc_fwup_boot(&twi);
 
+	} else if (argc == 2 && !strcmp(argv[1], "--get-bootcount")) {
+		retcode = lpc_get_next_bootpart(&twi,0);
+	} else if (argc == 2 && !strcmp(argv[1], "--get-next-bootpart")) {
+		retcode = lpc_get_next_bootpart(&twi,1);
+	} else if (argc >= 3 && !strcmp(argv[1], "--set-next-bootpart")) {
+		char next_boot_part = argv[2][0];
+		uint8_t ttl = 1;
+		if (argc == 4) {
+			ttl = atoi(argv[3]);
+		}
+		printf("Setting next bootpart: %c TTL: %d\n", next_boot_part, ttl);
+		lpc_set_next_bootpart(&twi, next_boot_part, ttl);
 	} else {
 		usage(argv[0]);
 	}

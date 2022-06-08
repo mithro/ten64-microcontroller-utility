@@ -520,3 +520,77 @@ uint8_t lpc_fwup_boot(const twi_device_t *twi){
 
 	return 0;
 }
+
+uint8_t lpc_get_next_bootpart(const twi_device_t *twi, int is_bootpart_only) {
+	lpc_api_message_t send;
+	lpc_api_message_t recv;
+	int rc;
+	int recv_len;
+	int send_len;
+
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiBdInfoGetBootCount;
+	send.len = 0;
+
+	send_len = send.len + LPC_API_MSG_HEADER_SIZE;
+
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		printf("%s: write command call failed\n", __func__);
+		return 1;
+	}
+
+	usleep(10000);
+
+	rc = uc_api_receive_response(twi, &recv, apiBdInfoGetBootCount, sizeof(lpc_api_get_next_bootpart_msg_t));
+	if (rc != 0) {
+		fprintf(stderr, "%s: Error receiving API response (%d)\n", __func__, rc);
+		return -1;
+	}
+
+	lpc_api_get_next_bootpart_msg_t * nextbootpart = (lpc_api_get_next_bootpart_msg_t *)recv.data;
+	if (!is_bootpart_only) {
+		printf("Next bootpart / bootcount: \n");
+		printf("\t%-20s: %d\n", "Bootcount", nextbootpart->bootcount);
+		printf("\t%-20s: ", "Next boot part");
+		if (nextbootpart->nextbootpart != '\0') {
+			printf("%c\n", (char)nextbootpart->nextbootpart);
+			printf("\t%-20s: %d\n", "TTL", nextbootpart->nextbootpart_ttl);
+		} else {
+			puts("(not set)\n");
+		}
+	} else {
+		if (nextbootpart->nextbootpart != '\0') {
+			printf("%c\n", (char)nextbootpart->nextbootpart);
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+uint8_t lpc_set_next_bootpart(const twi_device_t *twi, const char nextpart, uint8_t ttl) {
+	lpc_api_message_t send;
+	lpc_set_next_bootpart_msg_t next_boot_part_data;
+	int rc;
+	int send_len;
+
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiBdInfoSetNextBootPart;
+	send.len = sizeof(lpc_set_next_bootpart_msg_t);
+	next_boot_part_data.nextbootpart = nextpart;
+	next_boot_part_data.nextbootpart_ttl = ttl;
+	memcpy(send.data, &next_boot_part_data, sizeof(lpc_set_next_bootpart_msg_t));
+
+	send_len = send.len + LPC_API_MSG_HEADER_SIZE;
+
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		printf("%s: write failed (error=%d)\n", __func__, rc);
+		return 1;
+	}
+
+	return 0;
+}
