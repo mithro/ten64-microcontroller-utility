@@ -13,6 +13,8 @@ IF (ENABLE_MAC_SET)
 add_definitions(-DENABLE_MAC_CHANGE)
 ENDIF()
 
+set(CMAKE_EXE_LINKER_FLAGS "-static")
+
 INSTALL(TARGETS ten64-controller
     RUNTIME DESTINATION sbin)
 
