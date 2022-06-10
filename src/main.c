@@ -26,6 +26,7 @@ static void usage(const char *progname){
 	printf("%s --image-info                      Get current image data stored in both flash slots\n", progname);
 	printf("%s --fwup-run <a|b> <new_fw_file>    Firmware upgrade run\n", progname);
 	printf("%s --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n", progname);
+	printf("%s %-33s %s",progname,"--get-version","Get microcontroller version as a six-digit number (major-minor-patch)\n");
 	printf("%s %-33s %s",progname,"--get-bootcount","Get system bootcount (since reboot) and next boot part register\n");
 	printf("%s %-33s %s",progname,"--get-next-bootpart", "Return the next bootpart (by itself, no annotation), or exit=1 if not set\n");
 	printf("%s %-33s %s",progname,"--set-next-bootpart <x> <ttl>","Set next bootpart to <x> with a TTL of <ttl> reboots\n");
@@ -120,8 +121,10 @@ int main(int argc, char **argv)
 #endif
 	} else if (argc == 2 && !strcmp(argv[1], "--get-info")){
 
-		lpc_get_board_info(&twi);
+		lpc_get_board_info(&twi, 0);
 
+	} else if (argc >= 2 && !strcmp(argv[1], "--get-version")) {
+		lpc_get_board_info(&twi, 1);
 	} else if (argc == 2 && !strcmp(argv[1], "--get-state")){
 
 		lpc_get_system_state(&twi);

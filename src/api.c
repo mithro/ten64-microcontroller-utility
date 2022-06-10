@@ -64,7 +64,7 @@ uint8_t lpc_set_mac(const twi_device_t *twi, const lpc_mac_t * mac){
 	return 0;
 }
 
-uint8_t lpc_get_board_info(const twi_device_t *twi){
+uint8_t lpc_get_board_info(const twi_device_t *twi, int versionmode){
 	lpc_api_message_t send;
 	lpc_api_message_t recv;
 	int rc;
@@ -91,6 +91,11 @@ uint8_t lpc_get_board_info(const twi_device_t *twi){
 	}
 
 	lpc_bdinfo_t * info = (lpc_bdinfo_t *)recv.data;
+	if (versionmode == 1) {
+		printf("%02d%02d%02d\n", info->fw_version.major, info->fw_version.minor, info->fw_version.patch);
+		return 0;
+	}
+
 	printf("LPC uC info: \n");
 	printf("    MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", info->mac[0],info->mac[1],info->mac[2],info->mac[3],info->mac[4],info->mac[5]);
 	printf("    UUID: %08X:%08X:%08X:%08X\n",info->cpuId[0],info->cpuId[1],info->cpuId[2],info->cpuId[3]);

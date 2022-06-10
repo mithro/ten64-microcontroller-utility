@@ -185,7 +185,7 @@ typedef struct __attribute__((packed)) {
 } lpc_set_next_bootpart_msg_t;
 
 uint8_t lpc_set_mac(const twi_device_t *twi, const lpc_mac_t * mac);
-uint8_t lpc_get_board_info(const twi_device_t *twi);
+uint8_t lpc_get_board_info(const twi_device_t *twi, int versionmode);
 uint8_t lpc_get_system_state(const twi_device_t *twi);
 uint8_t lpc_set_reset_holdtime(const twi_device_t * twi, const lpc_reset_holdtime_t * reset_time);
 uint8_t lpc_set_reset_enabled(const twi_device_t * twi, const lpc_reset_enable_t * reset_enabled);
