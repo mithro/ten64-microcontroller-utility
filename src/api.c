@@ -309,6 +309,38 @@ uint8_t lpc_fwup_get_info(const twi_device_t *twi, lpc_image_info_t * img_info) 
 	return 0;
 }
 
+uint8_t ten64_mcu_fwup_get_next_slot(const twi_device_t *twi) {
+	lpc_api_message_t send;
+	lpc_api_message_t recv;
+	int send_len;
+	int recv_len;
+	int rc;
+
+	send.preamb = LPC_API_HEADER_PREAMB;
+	send.cmd = apiFwupGetInfo;
+	send.len = 0;
+
+	send_len = LPC_API_MSG_HEADER_SIZE;
+	rc = twi->write((uint8_t *)&send, send_len);
+	if (rc != send_len){
+		fprintf(stderr, "%s: Failed to get firmware image info: %d\n", __func__, rc);
+		return 1;
+	}
+
+	usleep(10000);
+	lpc_image_info_t * info = (lpc_image_info_t *)recv.data;
+	char next_fw_slot = 'b';
+
+	rc = uc_api_receive_response(twi, &recv, apiFwupGetInfo, sizeof(lpc_image_info_t));
+	if (info->bankAImg.magic == LPC_FWUP_IMAGE_MAGIC){
+		if (info->bankAImg.img_type != imgTypeStable) {
+			next_fw_slot = 'a';
+		}
+	}
+	printf("%c\n", next_fw_slot);
+	return 0;
+}
+
 uint8_t lpc_fwup_init(const twi_device_t *twi, const lpc_fwup_bank_id_t bank_id, const uint8_t blocks_to_send){
 	lpc_api_message_t send;
 	lpc_api_message_t recv;

@@ -199,5 +199,5 @@ uint8_t lpc_fwup_init(const twi_device_t *twi, const lpc_fwup_bank_id_t bank_id,
 uint8_t lpc_fwup_transfer(const twi_device_t *twi, const uint8_t bank_id, const char *fw_file_path);
 uint8_t lpc_fwup_check(const twi_device_t *twi, const lpc_image_header_t *img_header);
 uint8_t lpc_fwup_boot(const twi_device_t *twi);
-
+uint8_t ten64_mcu_fwup_get_next_slot(const twi_device_t *twi);
 #endif /* API_H */

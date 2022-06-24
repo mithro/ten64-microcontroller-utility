@@ -26,6 +26,7 @@ static void usage(const char *progname){
 	printf("%s --image-info                      Get current image data stored in both flash slots\n", progname);
 	printf("%s --fwup-run <a|b> <new_fw_file>    Firmware upgrade run\n", progname);
 	printf("%s --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n", progname);
+	printf("%s %-33s %s",progname,"--fwup-next-slot","Get the slot the next image should be installed in (use carefully!)\n");
 	printf("%s %-33s %s",progname,"--get-version","Get microcontroller version as a six-digit number (major-minor-patch)\n");
 	printf("%s %-33s %s",progname,"--get-bootcount","Get system bootcount (since reboot) and next boot part register\n");
 	printf("%s %-33s %s",progname,"--get-next-bootpart", "Return the next bootpart (by itself, no annotation), or exit=1 if not set\n");
@@ -165,6 +166,8 @@ int main(int argc, char **argv)
 
 		lpc_fwup_boot(&twi);
 
+	} else if (argc == 2 && !strcmp(argv[1], "--fwup-next-slot")) {
+		retcode = ten64_mcu_fwup_get_next_slot(&twi);
 	} else if (argc == 2 && !strcmp(argv[1], "--get-bootcount")) {
 		retcode = lpc_get_next_bootpart(&twi,0);
 	} else if (argc == 2 && !strcmp(argv[1], "--get-next-bootpart")) {
