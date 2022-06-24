@@ -19,13 +19,13 @@ static void usage(const char *progname){
 #ifdef ENABLE_MAC_CHANGE
 	printf("%s --set-mac <mac>                   Set the MAC address\n", progname);
 #endif
-	printf("%s --get-info                        Get uC info\n", progname);
-	printf("%s --get-state                       Get system control state\n", progname);
-	printf("%s --set-reset-holdtime <{3:10}>     Set the hold time for the external reset button\n", progname);
-	printf("%s --set-reset-enabled <0|1>         Enable/disable the external button reset\n", progname);
-	printf("%s --image-info                      Get current image data stored in both flash slots\n", progname);
-	printf("%s --fwup-run <a|b> <new_fw_file>    Firmware upgrade run\n", progname);
-	printf("%s --fwup-boot                       Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n", progname);
+	printf("%s %-33s %s",progname,"--get-info","Get uC info\n");
+	printf("%s %-33s %s",progname,"--get-state","Get system control state\n");
+	printf("%s %-33s %s",progname,"--set-reset-holdtime <{3:10}>","Set the hold time for the external reset button\n");
+	printf("%s %-33s %s",progname,"--set-reset-enabled <0|1>","Enable/disable the external button reset\n");
+	printf("%s %-33s %s",progname,"--image-info","Get current image data stored in both flash slots\n");
+	printf("%s %-33s %s",progname,"--fwup-run <a|b> <new_fw_file>","Copy new firmware image to specified bank\n");
+	printf("%s %-33s %s",progname,"--fwup-boot","Firmware upgrade boot into new firmware. NOTE: will reset main CPU\n");
 	printf("%s %-33s %s",progname,"--fwup-next-slot","Get the slot the next image should be installed in (use carefully!)\n");
 	printf("%s %-33s %s",progname,"--get-version","Get microcontroller version as a six-digit number (major-minor-patch)\n");
 	printf("%s %-33s %s",progname,"--get-bootcount","Get system bootcount (since reboot) and next boot part register\n");
