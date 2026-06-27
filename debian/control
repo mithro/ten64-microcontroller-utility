@@ -1,0 +1,21 @@
+Source: ten64-microcontroller-utility
+Section: utils
+Priority: optional
+Maintainer: Tim 'mithro' Ansell <me@mith.ro>
+Build-Depends: debhelper-compat (= 13), cmake
+Standards-Version: 4.7.0
+Homepage: https://gitlab.com/traversetech/ls1088firmware/ten64-microcontroller-utility
+Rules-Requires-Root: no
+
+Package: ten64-controller
+Architecture: arm64
+Depends: ${misc:Depends}
+Description: utility for the Traverse Ten64 board microcontroller
+ Command-line tool to talk to the LPC804 board-management microcontroller on the
+ Traverse Ten64 ARM64 router over I2C (/dev/i2c-0, address 0x7E). It reads the
+ microcontroller firmware version and serial number, the system control state
+ (ATX power, current/next boot source, reset-button behaviour), inspects the two
+ firmware image banks, and can install new microcontroller firmware.
+ .
+ The package ships a modules-load.d snippet that loads i2c-dev so /dev/i2c-0 is
+ present. It is specific to Ten64 hardware (arm64).
