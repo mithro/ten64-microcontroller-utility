@@ -1,0 +1,8 @@
+#!/usr/bin/make -f
+
+# Static arm64 binary built with the upstream CMake project. dh's cmake
+# buildsystem sets CMAKE_INSTALL_PREFIX=/usr, so the project's
+# INSTALL(... DESTINATION sbin) lands the binary at /usr/sbin/ten64-controller.
+# The -static link flag lives in CMakeLists.txt and is preserved.
+%:
+	dh $@ --buildsystem=cmake
