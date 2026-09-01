@@ -9,82 +9,51 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build-deb:
+    name: deb (${{ matrix.suite }})
     runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [trixie, sid]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build arm64 package in debian:trixie
+      - name: Build arm64 package in debian:${{ matrix.suite }}
+        env:
+          SUITE: ${{ matrix.suite }}
         run: |
           docker run --rm \
             -v "${PWD}:/src" -w /src \
-            docker.io/library/debian:trixie \
+            "docker.io/library/debian:$SUITE" \
             sh packaging/ci-build.sh
 
       - uses: actions/upload-artifact@v4
         with:
-          name: debs
+          name: debs-${{ matrix.suite }}
           path: built-debs/
+          if-no-files-found: error
 
   publish-apt:
+    # Build on PRs to validate, but never publish from one.
+    if: github.event_name != 'pull_request'
     needs: build-deb
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download debs
-        uses: actions/download-artifact@v4
-        with:
-          name: debs
-          path: apt-repo/
-
-      - name: Generate apt repo metadata
-        run: |
-          set -eux
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends dpkg-dev apt-utils
-          cp packaging/apt-index.html apt-repo/index.html
-          cd apt-repo
-          dpkg-scanpackages --multiversion . > Packages
-          gzip -k -f Packages
-          {
-            echo "Origin: ten64-controller"
-            echo "Label: ten64-controller"
-            echo "Suite: stable"
-            echo "Codename: trixie"
-            echo "Architectures: arm64"
-            echo "Components: main"
-            echo "Description: Traverse Ten64 board microcontroller utility (ten64-controller)"
-          } > Release
-          apt-ftparchive release . >> Release
-
-      - name: Sign repo
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
-        if: env.GPG_PRIVATE_KEY != ''
-        run: |
-          set -eux
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          cd apt-repo
-          gpg --batch --yes --armor --detach-sign --output Release.gpg Release
-          gpg --batch --yes --armor --clearsign --output InRelease Release
-          gpg --batch --yes --armor --export > ten64-controller.gpg
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: apt-repo/
-
-      - id: deploy
-        uses: actions/deploy-pages@v4
+    uses: mithro/apt-repo-action/.github/workflows/publish-apt.yml@main
+    with:
+      suites: "trixie sid"
+      architectures: "arm64"
+      origin: ten64-microcontroller-utility
+      description: "Traverse Ten64 microcontroller utility"
+      keyring-name: ten64-controller.gpg
+    secrets:
+      gpg-private-key: ${{ secrets.APT_GPG_PRIVATE_KEY }}
