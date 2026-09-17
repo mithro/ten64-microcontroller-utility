@@ -75,11 +75,16 @@ A pre-built arm64 package is published as a signed apt repository at
 sudo install -d -m0755 /etc/apt/keyrings
 curl -fsSL https://mithro.github.io/ten64-microcontroller-utility/ten64-controller.gpg \
   | sudo tee /etc/apt/keyrings/ten64-controller.gpg > /dev/null
-echo "deb [signed-by=/etc/apt/keyrings/ten64-controller.gpg] https://mithro.github.io/ten64-microcontroller-utility/ ./" \
+echo "deb [signed-by=/etc/apt/keyrings/ten64-controller.gpg] https://mithro.github.io/ten64-microcontroller-utility/trixie/ ./" \
   | sudo tee /etc/apt/sources.list.d/ten64-controller.list
 sudo apt update
 sudo apt install ten64-controller
 ```
+
+Each suite (`trixie/`, `sid/`) is its own flat repository, so the URL must name
+one and keep the trailing `./`. The repository root carries no `Packages` file,
+so a source line pointing at it fails `apt update` with a 404. On sid, swap
+`trixie/` for `sid/`.
 
 The package installs `/usr/sbin/ten64-controller` and a modules-load snippet that
 loads `i2c-dev` so `/dev/i2c-0` is present. The tool is arm64/Ten64-specific.
