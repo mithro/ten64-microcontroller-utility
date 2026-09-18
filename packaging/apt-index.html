@@ -12,13 +12,26 @@ firmware image banks, and install microcontroller firmware. arm64 only (Ten64
 hardware). Source:
 <a href="https://github.com/mithro/ten64-microcontroller-utility">github.com/mithro/ten64-microcontroller-utility</a>.</p>
 
-<h2>Setup (Ten64, Debian arm64)</h2>
+<h2>Setup (Ten64, Debian trixie arm64)</h2>
 <pre>
 sudo install -d -m0755 /etc/apt/keyrings
 curl -fsSL https://mithro.github.io/ten64-microcontroller-utility/ten64-controller.gpg \
   | sudo tee /etc/apt/keyrings/ten64-controller.gpg > /dev/null
 
-echo "deb [signed-by=/etc/apt/keyrings/ten64-controller.gpg] https://mithro.github.io/ten64-microcontroller-utility/ ./" \
+echo "deb [signed-by=/etc/apt/keyrings/ten64-controller.gpg] https://mithro.github.io/ten64-microcontroller-utility/trixie/ ./" \
+  | sudo tee /etc/apt/sources.list.d/ten64-controller.list
+
+sudo apt update
+sudo apt install ten64-controller
+</pre>
+
+<h2>Setup (Debian sid arm64)</h2>
+<pre>
+sudo install -d -m0755 /etc/apt/keyrings
+curl -fsSL https://mithro.github.io/ten64-microcontroller-utility/ten64-controller.gpg \
+  | sudo tee /etc/apt/keyrings/ten64-controller.gpg > /dev/null
+
+echo "deb [signed-by=/etc/apt/keyrings/ten64-controller.gpg] https://mithro.github.io/ten64-microcontroller-utility/sid/ ./" \
   | sudo tee /etc/apt/sources.list.d/ten64-controller.list
 
 sudo apt update
