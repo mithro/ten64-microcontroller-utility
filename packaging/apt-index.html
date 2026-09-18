@@ -12,12 +12,6 @@ firmware image banks, and install microcontroller firmware. arm64 only (Ten64
 hardware). Source:
 <a href="https://github.com/mithro/ten64-microcontroller-utility">github.com/mithro/ten64-microcontroller-utility</a>.</p>
 
-<p>Each suite is its own flat repository, so the source line must name one
-(<code>trixie/</code> or <code>sid/</code>) and keep the trailing
-<code>./</code> &mdash; the repository root carries no <code>Packages</code>
-file. Pick the suite matching your system
-(<code>. /etc/os-release; echo $VERSION_CODENAME</code>).</p>
-
 <h2>Setup (Ten64, Debian trixie arm64)</h2>
 <pre>
 sudo install -d -m0755 /etc/apt/keyrings

@@ -81,10 +81,7 @@ sudo apt update
 sudo apt install ten64-controller
 ```
 
-Each suite (`trixie/`, `sid/`) is its own flat repository, so the URL must name
-one and keep the trailing `./`. The repository root carries no `Packages` file,
-so a source line pointing at it fails `apt update` with a 404. On sid, swap
-`trixie/` for `sid/`.
+On sid, use `https://mithro.github.io/ten64-microcontroller-utility/sid/` instead.
 
 The package installs `/usr/sbin/ten64-controller` and a modules-load snippet that
 loads `i2c-dev` so `/dev/i2c-0` is present. The tool is arm64/Ten64-specific.
