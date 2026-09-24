@@ -69,19 +69,19 @@ Fwup transfer: Transfer done
 ## Install via apt (Ten64, Debian arm64)
 
 A pre-built arm64 package is published as a signed apt repository at
-<https://mithro.github.io/ten64-microcontroller-utility/>:
+<https://mith.ro/ten64-microcontroller-utility/>:
 
 ```bash
 sudo install -d -m0755 /etc/apt/keyrings
-curl -fsSL https://mithro.github.io/ten64-microcontroller-utility/ten64-microcontroller-utility.gpg \
+curl -fsSL https://mith.ro/ten64-microcontroller-utility/ten64-microcontroller-utility.gpg \
   | sudo tee /etc/apt/keyrings/ten64-microcontroller-utility.gpg > /dev/null
-echo "deb [signed-by=/etc/apt/keyrings/ten64-microcontroller-utility.gpg] https://mithro.github.io/ten64-microcontroller-utility/trixie/ ./" \
+echo "deb [signed-by=/etc/apt/keyrings/ten64-microcontroller-utility.gpg] https://mith.ro/ten64-microcontroller-utility/trixie/ ./" \
   | sudo tee /etc/apt/sources.list.d/ten64-microcontroller-utility.list
 sudo apt update
 sudo apt install ten64-controller
 ```
 
-On sid, use `https://mithro.github.io/ten64-microcontroller-utility/sid/` instead.
+On sid, use `https://mith.ro/ten64-microcontroller-utility/sid/` instead.
 
 The package installs `/usr/sbin/ten64-controller` and a modules-load snippet that
 loads `i2c-dev` so `/dev/i2c-0` is present. The tool is arm64/Ten64-specific.
