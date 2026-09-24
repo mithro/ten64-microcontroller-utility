@@ -2,7 +2,7 @@ name: Debian Package + apt repo
 
 # Build the Ten64 microcontroller utility (ten64-controller) as an arm64 .deb and
 # publish it as a signed flat apt repository on GitHub Pages
-# (https://mithro.github.io/ten64-microcontroller-utility/). Mirrors the pattern
+# (https://mith.ro/ten64-microcontroller-utility/). Mirrors the pattern
 # used by other mithro apt-repo projects (dtbocfg, netplan).
 
 on:
